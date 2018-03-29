@@ -1,4 +1,4 @@
-classdef AnkleModel < handle
+classdef DropFootModel < handle
     % Simple model of standing postural stability, consisting of foot and
     % body segments, and two muscles that create moments about the ankles,
     % tibialis anterior. 
@@ -48,7 +48,12 @@ function dx_dt = dynamics(t, x, TA, control)
     % TA: tibialis anterior muscle object (a HillTypeModel)
     
     % TO DO: define original params
-
+    Iankle = 
+    dS =  
+    dTA =
+    
+    aTA = 
+        
     taLengthSE = TA.getNormalizedLengthSE(StabilityModel.tibialisLength(x(1)),x(4));
     
     % mTA: moment created by TA
@@ -60,13 +65,15 @@ function dx_dt = dynamics(t, x, TA, control)
     
     % TO DO: finish dynamics eqn.
     a_dt = x(2);
-    v_dt = 
+    v_dt = ( -mTA + getGravityMomentAnkle(x(1)) + INERTIALMOMENT ) / Iankle;
     ta_dt =  TA.getVelocity(aTA, x(4), taLengthSE);
+    % 3 other types of angle 
+    
   
     dx_dt = [a_dt v_dt ta_dt]';
 end
 
-function result = getGravityMoment(angle)
+function result = getGravityMomentAnkle(angle)
     % angle: angle of body segment (up from horizontal)
     % result: moment about ankle due to force of gravity on body
     
@@ -76,6 +83,13 @@ function result = getGravityMoment(angle)
 %     result = m*g*lCOM*sin(angle-pi/2);
 
     % TO DO: calculate gravity moment of ankle
+end
+
+function result = getGravityMomentShank(angle)
+    % angle: angle of body segment (up from horizontal)
+    % result: moment about ankle due to force of gravity on body
+    
+    % TO DO: get gravity moment about shank (and ankle?)
 end
 
 function result = getActivationTA(angle)
@@ -96,4 +110,12 @@ end
 
 function result = getInertialMoment()
     % TO DO: get moment about ankle due to inertia of system
+end
+
+function result = getShankAngle()
+    % TO DO: get shank angle, will affect ankle moment arm 
+end
+
+function result = getInertialForces()
+    % TO DO: get inertial forces as due to swinging of ankle
 end
