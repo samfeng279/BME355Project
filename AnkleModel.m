@@ -82,7 +82,18 @@ function result = getActivationTA(angle)
     % TO DO: get activation of TA at any given point in swing phase
 end
 
-function result = getMomentArm(angle)
+function result = getMomentArm()
     % TO DO: look at angle of shank
+end
 
+function result = getFootKneeAngle()
+    % TO DO: get angle COM of foot in reference to knee
+end
+
+function result = getAnkleAngle()
+    % TO DO: get ankle angle 
+end
+
+function result = getInertialMoment()
+    % TO DO: get moment about ankle due to inertia of system
 end

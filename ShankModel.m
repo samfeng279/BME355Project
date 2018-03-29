@@ -24,3 +24,7 @@ end
 function result = getShankAngle()
     % TO DO: get shank angle, will affect ankle moment arm 
 end
+
+function result = getInertialForces()
+    % TO DO: get inertial forces as due to swinging of ankle
+end
