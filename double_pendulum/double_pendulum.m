@@ -100,9 +100,9 @@ y2=-l1*cos(phi1)-l2*cos(phi2);
    height(1) = x1(1) + cos(phi2(1))*0.2386;
    for i = 2:length(x1)
        if cos(phi2) <= 1
-           height(i) = x1(i) + cos(phi2(i))*0.2386
+           height(i) = x1(i) + cos(phi2(i))*0.2386;
        else
-           height(i) = x1(i) - cos(phi2(i))*0.2386
+           height(i) = x1(i) - cos(phi2(i))*0.2386;
        end
    end
    plot(t, height)
