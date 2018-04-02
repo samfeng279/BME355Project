@@ -330,7 +330,7 @@ classdef SwingPhaseModel < handle
             S = HillTypeMuscle(8000, .6*restLengthS, .4*restLengthS);
             
             % Set initial parameters for ODE
-            ivp=[SP.shankAngle; SP.footAngle; SP.shankAngVel; SP.footAngVel; 1; 1];
+            ivp=[SP.shankAngle; SP.footAngle; SP.shankAngVel; SP.footAngVel; 1.045; 0.8129];
             
             % Simulate double pendulum behaviour
             SP.double_pendulum(ivp, SP.duration, SP.fps, TA, S);
