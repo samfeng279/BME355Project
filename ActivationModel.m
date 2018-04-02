@@ -87,11 +87,11 @@ for i = 1:size(new_times,2)
 end
 
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % ACTIVATION MODELLING CODE BASED ON THE SIMULATED SAMPLE DATA SET TO
-% % PROVIDE MODEL OF HOW TA MUSCLE IS ACTUALLY STIMULATED DURING THE WALKING
-% % CYCLE
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ACTIVATION MODELLING CODE BASED ON THE SIMULATED SAMPLE DATA SET TO
+% PROVIDE MODEL OF HOW TA MUSCLE IS ACTUALLY STIMULATED DURING THE WALKING
+% CYCLE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 pulse_width = 0.001; %500-1000 microseconds --> may need to change based on sampling rates
 frequency = 20; %20-50Hz
@@ -177,4 +177,10 @@ xlabel('Time (s)')
 ylabel('EMG (smV)')
 legend('Simulated', 'Modelled')
 coeffs = polyfit(x,y,2);
+
+
+
+
+
+
 
