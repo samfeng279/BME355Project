@@ -215,7 +215,7 @@ classdef SwingPhaseModel < handle
         
         % will be loading data = csvread('S_STIM.csv');
         %20-50Hz
-        function SP = getModelledTA(SP, data, frequency)
+        function SP = getModelledS(SP, data, frequency)
             regressions = getActivationRegression(data, SP.gaitInterval);
             simulatedS = getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
@@ -293,14 +293,28 @@ classdef SwingPhaseModel < handle
     
     methods (Access = public)
         
-        function aS = getActivationS(t, theta)
-            % TO DO: function for soleus activation energy
-            aS = 0;
+        function aTA = getActivationTA(SP, t)
+            % current test activation for TA
+            aS = 900;
+            
+%             % t point access of TA activation
+%             for i = 1:size(SP.modelledTA,1)
+%                 if SP.modelledTA(i,1) == t
+%                     aTA = SP.modelledTA(i,2);
+%                 end
+%             end
         end
         
-        function aTA = getActivationTA(theta)
-            % TO DO: function for tibialis activation energy
-            aTA = 900;
+        function aS = getActivationS(SP, t)
+            % current test activation for S
+            aS = 0;
+            
+%             % t point access of S activation
+%             for i = 1:size(SP.modelledS,1)
+%                 if SP.modelledS(i,1) == t
+%                     aS = SP.modelledS(i,2);
+%                 end
+%             end
         end
         
         function simulate(SP)
