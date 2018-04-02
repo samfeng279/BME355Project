@@ -5,15 +5,15 @@ classdef SwingPhaseModel < handle
     
     properties (Access = public)
         % TO DO: initial values
-        
-        shankAngle = 7*pi/4; % Initial angle of shank from pi/2
-        shankAngVel = pi/12;  % Initial angular velocity of shank
-        footAngle = 2*pi+0.6; % Initial angle of COM of foot from pi/2
-        footAngVel = 0; % Initial angular velocity of COM of foot
-        shankMass = 3.285; 
-        footMass = 1.095; 
+        shankAngle = 5.926; % Initial angle of shank from pi/2
+        shankAngVel = 2.042;  % Initial angular velocity of shank
+        footAngle = 6.574; % Initial angle of COM of foot from pi/2
+        footAngVel = 7.460; % Initial angular velocity of COM of foot
+        shankMass = 0.0433*80.7; 
+        footMass = 0.0137*80.7;  
         shankLength = 0.4318; 
         ankleFootLength = 0.07136; % Distance from ankle to COM of foot
+        ankleToeLength = 0.2331;
         duration = 0.6; % Duration of simulation
         fps = 100; % Frames per sec - changes resolution of animation 
         modelledTA; 
@@ -133,12 +133,14 @@ classdef SwingPhaseModel < handle
             
             result = simulated;
         end
-        
+    end
+    
+    methods (Access = public)
         %20-50Hz
         % will be loading data = csvread('TA_STIM.csv'); 
-        function SP = getModelledTA(SP, data, frequency)
-            regressions = getActivationRegression(data, SP.gaitInterval);
-            simulatedTA = getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
+        function getModelledTA(SP, data, frequency)
+            regressions = SwingPhaseModel.getActivationRegression(data, SP.gaitInterval);
+            simulatedTA = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
             
@@ -289,15 +291,12 @@ classdef SwingPhaseModel < handle
             
             SP.modelledS = activations;
         end 
-    end
-    
-    methods (Access = public)
         
         function aTA = getActivationTA(SP, t)
             % current test activation for TA
-            aS = 900;
+            aTA = 900;
             
-%             % t point access of TA activation
+            % t point access of TA activation
 %             for i = 1:size(SP.modelledTA,1)
 %                 if SP.modelledTA(i,1) == t
 %                     aTA = SP.modelledTA(i,2);
@@ -318,6 +317,9 @@ classdef SwingPhaseModel < handle
         end
         
         function simulate(SP)
+            taData = csvread('TA_STIM.csv');
+            SP.getModelledTA(taData, 50); 
+            
             clc; figure;
             
             % TO DO: establish max iso forces, initial CE lengths of each
@@ -345,15 +347,14 @@ classdef SwingPhaseModel < handle
             l1 = SP.shankLength; 
             d1 = 0.494 * l1;
             l2 = SP.ankleFootLength;
-            g = 9.81; 
-%             I1 = m1 * d1 ^ 2;
-%             I2 = m2 * l2 ^ 2;
-            I1 = 100;
-            I2 = 80;
+            g = 9.81;
+            I1 = m1*((l1^2)/2);
+            I2 = m2*(l2^2);
+            I2COM = m2*(0.257*0.2921)^2;
             
             % TO DO: decide what to pass into these activation functions (can be angle/time?)
-            aTA = SwingPhaseModel.getActivationTA(t);
-            aS = SwingPhaseModel.getActivationS(t);
+            aTA = SP.getActivationTA(t);
+            aS = SP.getActivationS(t);
             
             % Calculate moment about ankle due to TA
             taLength = SwingPhaseModel.tibialisLength(pi-x(1)-x(2));
@@ -381,15 +382,15 @@ classdef SwingPhaseModel < handle
     
             xdot(2) = x(4);
             
-            xdot(3) = -(m2*l1*l2*x(4)^2*sin(x(1)-x(2))*I2+m2^2*l1*l2^3*x(4)^2*sin(x(1)-x(2))+m1*g*d1*sin(x(1))*...
-                I2+m1*g*d1*sin(x(1))*m2*l2^2+m2*g*l1*sin(x(1))*I2+m2^2*g*l1*sin(x(1))*l2^2+m2^2*l1^2*l2^2*cos(x(1)-x(2))*...
+            xdot(3) = -(m2*l1*l2*x(4)^2*sin(x(1)-x(2))*I2COM+m2^2*l1*l2^3*x(4)^2*sin(x(1)-x(2))+m1*g*d1*sin(x(1))*...
+                I2COM+m1*g*d1*sin(x(1))*m2*l2^2+m2*g*l1*sin(x(1))*I2COM+m2^2*g*l1*sin(x(1))*l2^2+m2^2*l1^2*l2^2*cos(x(1)-x(2))*...
                 x(3)^2*sin(x(1)-x(2))-m2^2*l1*l2^2*cos(x(1)-x(2))*g*sin(x(2)))/(-m2^2*l1^2*l2^2*...
-                cos(x(1)-x(2))^2+I1-I2+I1 *m2*l2^2+m2*l1^2*I2+m2^2*l1^2*l2 ^2) ; %theta1-double-dot
+                cos(x(1)-x(2))^2+I1-I2COM+I1 *m2*l2^2+m2*l1^2*I2COM+m2^2*l1^2*l2 ^2) ; %theta1-double-dot
             
             xdot(4) = (l1^2*cos(x(1)-x(2))*m2*l2*x(4)^2*sin(x(1)-x(2))+l1*cos(x(1)-x(2))*m1*g*d1*...
                 sin(x(1))+l1^2*cos(x(1)-x(2))*m2*g*sin(x(1))+l1*x(3)^2*sin(x(1)-x(2))*I1+l1^3*...
                 x(3)^2*sin(x(1)-x(2))*m2-g*sin(x(2))*I1-g*sin(x(2))*m2*l1^2)*m2*l2/...
-                (-m2^2*l1^2*l2^2*cos(x(1)-x(2))^2+I1*I2+I1*m2*l2^2+m2*l1^2*I2+m2^2*l1^2*l2^2) + (taMoment-sMoment)/I2 ; %theta 2-double-dot
+                (-m2^2*l1^2*l2^2*cos(x(1)-x(2))^2+I1*I2COM+I1*m2*l2^2+m2*l1^2*I2COM+m2^2*l1^2*l2^2) + (taMoment-sMoment)/I2; %theta 2-double-dot
             
             xdot(5) = TA.getVelocity(aTA,x(5),TA.getNormalizedLengthSE(taLength,x(5)));
             xdot(6) = S.getVelocity(aS,x(6),TA.getNormalizedLengthSE(sLength,x(6)));
@@ -409,13 +410,23 @@ classdef SwingPhaseModel < handle
                         
             phi1=y(1,:)'; dtphi1=y(3,:)';
             phi2=y(2,:)'; dtphi2=y(4,:)';
-            l1=SP.shankLength; l2=SP.ankleFootLength;
+            l1=SP.shankLength; l2=SP.ankleFootLength; l3=SP.ankleToeLength;
             
             % Coordinates of ankle and COM of foot
             x1 = l1*sin(phi1);
             y1 = -l1*cos(phi1);
             x2 = l1*sin(phi1)+l2*sin(phi2);
             y2 = -l1*cos(phi1)-l2*cos(phi2);
+%             for i = 1:length(x1)
+%                if cos(phi2) <= 1
+%                    x3 = l1*cos(phi1)+l3*sin(phi2-0.5349);
+%                    y3 = -l1*cos(phi1)-l3*cos(phi2+0.5349);
+%                else
+%                    x3 = l1*cos(phi1)-l3*sin(phi2-0.5349);
+%                    y3 = -l1*cos(phi1)+l3*cos(phi2+0.5349);
+%                end
+%             end
+            
             
             % Plot trajectory of ankle and COM of foot
             figure(1)
@@ -465,8 +476,8 @@ classdef SwingPhaseModel < handle
             set(gca,'nextplot','replacechildren');
             for i=1:length(phi1)-1
                 if (ishandle(h)==1)
-                    Xcoord=[0,x1(i), x2(i)];
-                    Ycoord=[0,-l1*cos(phi1(i)),-l1*cos(phi1(i))-l2*cos(phi2(i))];
+                    Xcoord=[0,x1(i), x2(i), x3(i)];
+                    Ycoord=[0,y1(i), y2(i), y3(i)];
                     set(h,'XData',Xcoord,'YData',Ycoord);
                     drawnow;
                     F(i) = getframe;
