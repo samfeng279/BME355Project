@@ -289,8 +289,11 @@ classdef SwingPhaseModel < handle
             
             SP.modelledS = activations;
         end 
+    end
+    
+    methods (Access = public)
         
-        function aS = getActivationS(theta)
+        function aS = getActivationS(t, theta)
             % TO DO: function for soleus activation energy
             aS = 0;
         end
@@ -299,9 +302,7 @@ classdef SwingPhaseModel < handle
             % TO DO: function for tibialis activation energy
             aTA = 900;
         end
-    end
-    
-    methods (Access = public) 
+        
         function simulate(SP)
             clc; figure;
             
