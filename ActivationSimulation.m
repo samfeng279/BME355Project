@@ -1,12 +1,3 @@
-% for loop which goes through various frequencies
-	% perform peak finding ~
-	% finding area under stimulus
-	% for loop which iterates through all peaks
-		% val = multiply period by amplitude of stimulus (bxh/2*2)
-		% integrate += val
-	
-	% store frequency and final integration in 2D array
-
 data = csvread('TA_STIM.csv'); 
 pointNum = 5000;
 gaitInterval = 1.41;
@@ -14,68 +5,30 @@ swingInterval = [0.6 1];
 minFreq = 20;
 maxFreq = 50;
 fatigue = [];
+
+regressions = getActivationRegression(data, gaitInterval); 
+simulatedTA = getSimulatedActivations(regressions, gaitInterval, swingInterval);
+
 for i = minFreq:maxFreq
     %getting the modelled data for the specified frequency
-    regressions = getActivationRegression(data, gaitInterval);
-    simulatedTA = getSimulatedActivations(regressions, gaitInterval, swingInterval);
+    
     model = getModelledActivations(simulatedTA, i, gaitInterval, pointNum);
     
-    delta = (pointNum/gaitInterval)/i; %finding the curret delta to identify the proper peaks
-    % re-finding to data peaks --> this section could be optimized
-    latestPeak = 1; latestZero = 1;
-    areas = []; % holder array for each half-isoceles triangle area
-    for j = 1:size(model,1)    
-        % identify where and when peaks should occur (to create jagged activation)
-        if (latestPeak == 1) && ((j - latestPeak) > delta/2)
-            latestPeak = j;
-        else
-            if (j - latestPeak) > delta
-                latestPeak = j;
-            elseif (j - latestZero) > delta
-                latestZero = j;
-            end  
-        end
-
-        % Indentifying the zero-peak relationship to find the area under
-        % each linear relationship
-        if latestZero < latestPeak
-            % check for empty eqns (check is not necessary for descending case
-            % as it is assumed ascending comes first
-            if isempty(areas)
-                height = model(latestPeak,2);
-                base = abs(model(latestPeak,1) - model(latestZero,1));
-                areas = [areas; latestZero latestPeak base*height/2];
-            % checking if the coeffs have already been found for these
-            % particular points
-            elseif ~any(areas(:,1) == latestZero)
-                height = model(latestPeak,2);
-                base = abs(model(latestPeak,1) - model(latestZero,1));
-                areas = [areas; latestZero latestPeak base*height/2];
-            end
-        % looking at the descending curve from peak 
-        elseif latestZero > latestPeak
-            if ~any(areas(:,1) == latestPeak)
-                height = model(latestPeak,2);
-                base = abs(model(latestZero,1) - model(latestPeak,1));
-                areas = [areas; latestPeak latestZero base*height/2];
-            end
-        end
-    end
-    
-    fatigue = [fatigue; i sum(areas(:,3))];
+    area = trapz(model(:,1),model(:,2));
+    fatigue = [fatigue; i area];
     
     % plot regular sample data and overlay modelled activations
-    figure(i)
-    plot(simulatedTA(:,1),simulatedTA(:,2), 'b')
-    hold on
-    plot(model(:,1), model(:,2), 'r')
-    xlabel('Time (s)')
-    ylabel('EMG (smV)')
-    legend('Simulated', 'Modelled')
+%     figure(i)
+%     plot(simulatedTA(:,1),simulatedTA(:,2), 'b')
+%     hold on
+%     plot(model(:,1), model(:,2), 'r')
+%     xlabel('Time (s)')
+%     ylabel('EMG (smV)')
+%     legend('Simulated', 'Modelled')
 end
 
 % plot freq vs. fatigue
-figure(i+1)
+figure(1)
 plot(fatigue(:,1),fatigue(:,2), 'b')
 xlabel('Frequecy (Hz)')
 ylabel('Relative Fatigue')
