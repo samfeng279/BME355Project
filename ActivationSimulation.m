@@ -9,8 +9,8 @@
 
 data = csvread('TA_STIM.csv'); 
 pointNum = 5000;
-gaitInterval = 2;
-swingInterval = 1;
+gaitInterval = 1.41;
+swingInterval = [0.6 1];
 minFreq = 20;
 maxFreq = 50;
 fatigue = [];
@@ -44,28 +44,25 @@ for i = minFreq:maxFreq
             if isempty(areas)
                 height = model(latestPeak,2);
                 base = abs(model(latestPeak,1) - model(latestZero,1));
-                area = base*height/2;
-                areas = [areas; area];
+                areas = [areas; latestZero latestPeak base*height/2];
             % checking if the coeffs have already been found for these
             % particular points
             elseif ~any(areas(:,1) == latestZero)
                 height = model(latestPeak,2);
                 base = abs(model(latestPeak,1) - model(latestZero,1));
-                area = base*height/2;
-                areas = [areas; area];
+                areas = [areas; latestZero latestPeak base*height/2];
             end
         % looking at the descending curve from peak 
         elseif latestZero > latestPeak
             if ~any(areas(:,1) == latestPeak)
                 height = model(latestPeak,2);
                 base = abs(model(latestZero,1) - model(latestPeak,1));
-                area = base*height/2;
-                areas = [areas; area];
+                areas = [areas; latestPeak latestZero base*height/2];
             end
         end
     end
     
-    fatigue = [fatigue; i sum(areas)];
+    fatigue = [fatigue; i sum(areas(:,3))];
     
     % plot regular sample data and overlay modelled activations
     figure(i)
@@ -224,6 +221,38 @@ function result = getModelledActivations(simulatedTA, frequency, gaitInterval, p
 
     result = activations;
 end 
+
+function result = getSimulated(regressions, gaitInterval, swingInterval)
+    % data set gives points to model the activation of TA, and from
+    % here we calculate activations of TA through the gait cycle
+    % using the regression -> create new time array (select point #)
+    times = linspace(0, gaitInterval, 5000);
+    simulated = [];
+    for i = 1:size(times,2)
+        for j = 1:size(regressions,1)-1
+            % finding which interval of the regression data the new time falls into
+            if (times(i) >= regressions(j,1)) && (times(i) <= regressions(j+1,1))
+                % now that we've found the interval, we can approx the
+                % activation value using either j's or j+1's polynomial
+                a = polyval([regressions(j, 2) regressions(j, 3) regressions(j, 4)], times(i));
+                simulated = [simulated; times(i) a];
+                break;
+            end
+        end
+    end
+    
+    simulated
+    
+    % clipping data for the swing phase using swingInterval
+    min_index = round(swingInterval(1)*size(simulated,1));
+    max_index = round(swingInterval(2)*size(simulated,1));
+    sim = simulated(min_index:max_index,1:2);
+    min_index
+    max_index
+    sim
+    
+    result = sim;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SIMULATING THE MODEL IN ORDER TO FIND OPTIMUM FREQUENCY FOR MINIMAL
