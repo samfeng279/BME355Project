@@ -351,12 +351,14 @@ classdef SwingPhaseModel < handle
                 shankAngVel = SP.shankAngVel;
             end
             
-            
             % Set initial parameters for ODE
             ivp=[SP.shankAngle; SP.footAngle; shankAngVel; footAngVel; 1.045; 0.8129];
             
             % Simulate double pendulum behaviour
             SP.double_pendulum(ivp, SP.duration, SP.fps, TA, S, dropFoot);
+            
+            %Simulate isometric forces
+            SP.isometric(TA,222000,.6*restLengthTA,.4*restLengthTA, dropFoot);
         end 
         
         function xdot = dynamics(SP,t,x,TA,S,dropFoot)
@@ -472,7 +474,7 @@ classdef SwingPhaseModel < handle
             get(h,'fontSize') 
             set(h,'fontSize',14)
             legend('\theta_1','\theta_2')
-            xlabel('time','fontSize',14);
+            xlabel('Time','fontSize',14);
             ylabel('phi','fontSize',14);
             title('phi_1 and phi_2','fontsize',14)
             fh = figure(2);
@@ -493,10 +495,10 @@ classdef SwingPhaseModel < handle
 %                end
 %             end
             plot(t, height)
-            xlabel('time','fontSize',14);
+            xlabel('Time','fontSize',14);
             ylabel('Toe Height','fontSize',14);
             title('Toe Hight over Time','fontsize',14)
-            axis([0 0.7 -0.05 0.25]); axis square;
+            axis([0 (SP.duration+0.1) -0.05 0.25]); axis square;
 
             figure(4)
             h=plot(0,0,'MarkerSize',30,'Marker','.','LineWidth',2);
@@ -513,6 +515,35 @@ classdef SwingPhaseModel < handle
                     pause(0.01);
                 end
             end
+        end
+        function isometric(SP,TA,f0M,restingLengthCE,restingLengthSE,dropFoot)
+            % Simulates Isometric force behaviour of the TA
+            % included, creates graphs to assist with visualization
+            
+            L = restingLengthCE + restingLengthSE;
+            
+            if dropFoot
+               afun = @(t) 0*t;
+            else
+               afun = @(t) SP.getActivationTA(t);
+            end
+            
+            odefun = @(t, y) TA.getVelocity(afun(t), y, TA.getNormalizedLengthSE(L,y));
+            OPTIONS = odeset('AbsTol', 1e-6, 'RelTol', 1e-5);  % use this as the final argument to ode45 
+            [time, x] = ode45(odefun, [0 SP.duration], 1, OPTIONS);
+            
+            figure(5)
+            subplot(2,1,1)
+            plot(time, x*restingLengthCE)
+            ylabel('CE length')
+            set(gca, 'FontSize', 18)
+            xlim([0 (SP.duration+0.1)]);
+            subplot(2,1,2)
+            plot(time, f0M*TA.forceLengthSE(TA.getNormalizedLengthSE(L, x)));
+            xlabel('Time')
+            ylabel('Force')
+            set(gca, 'FontSize', 18)
+            xlim([0 (SP.duration+0.1)]);
         end
     end      
     
