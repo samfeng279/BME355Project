@@ -9,8 +9,8 @@ classdef SwingPhaseModel < handle
         shankAngVel = 2.042;  % Initial angular velocity of shank
         footAngle = 6.574; % Initial angle of COM of foot from pi/2
         footAngVel = 7.460; % Initial angular velocity of COM of foot
-        footAngVel = 0;
-        shankAngVel = 0;
+%         footAngVel = 0;
+%         shankAngVel = 0;
         shankMass = 0.0433*80.7; 
         footMass = 0.0137*80.7;  
         shankLength = 0.4318; 
