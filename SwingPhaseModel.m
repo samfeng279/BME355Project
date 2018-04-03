@@ -9,11 +9,14 @@ classdef SwingPhaseModel < handle
         shankAngVel = 2.042;  % Initial angular velocity of shank
         footAngle = 6.574; % Initial angle of COM of foot from pi/2
         footAngVel = 7.460; % Initial angular velocity of COM of foot
+        footAngVel = 0;
+        shankAngVel = 0;
         shankMass = 0.0433*80.7; 
         footMass = 0.0137*80.7;  
         shankLength = 0.4318; 
         ankleFootLength = 0.07136; % Distance from ankle to COM of foot
-        ankleToeLength = 0.2331;
+        %ankleToeLength = 0.2331;
+        COMToeLength = 0.217883;
         duration = 0.6; % Duration of simulation
         fps = 100; % Frames per sec - changes resolution of animation 
         modelledTA; 
@@ -129,9 +132,9 @@ classdef SwingPhaseModel < handle
             end
             
             % clipping data for the swing phase using swingInterval
-            min_index = round(swingInterval(2)*size(simulated_ta,1));
-            max_index = round(swingInterval(2)*size(simulated_ta,1));
-            simulated = simulated_ta(min_index:max_index,1:2);
+            min_index = round(swingInterval(2)*size(simulated,1));
+            max_index = round(swingInterval(2)*size(simulated,1));
+            simulated = simulated(min_index:max_index,1:2);
             result = simulated;
         end
     end
@@ -295,7 +298,7 @@ classdef SwingPhaseModel < handle
         
         function aTA = getActivationTA(SP, t)
             % current test activation for TA
-            aTA = 900;
+            %aTA = 900;
             
             % t point access of TA activation
 %             for i = 1:size(SP.modelledTA,1)
@@ -303,6 +306,8 @@ classdef SwingPhaseModel < handle
 %                     aTA = SP.modelledTA(i,2);
 %                 end
 %             end
+            [c index] = min(abs(SP.modelledTA(:,1)-t));
+            aTA = SP.modelledTA(index,2);
         end
         
         function aS = getActivationS(SP, t)
@@ -315,11 +320,14 @@ classdef SwingPhaseModel < handle
 %                     aS = SP.modelledS(i,2);
 %                 end
 %             end
+
+%             [c index] = min(abs(SP.modelledS(:,1)-t));
+%             aS = SP.modelledS(index,2);
         end
         
         function simulate(SP)
             taData = csvread('TA_STIM.csv');
-            SP.getModelledTA(taData, 50); 
+            SP.getModelledTA(taData, 50);
             
             clc; figure;
             
@@ -349,9 +357,12 @@ classdef SwingPhaseModel < handle
             d1 = 0.494 * l1;
             l2 = SP.ankleFootLength;
             g = 9.81;
-            I1 = m1*((l1^2)/2);
-            I2 = m2*(l2^2);
-            I2COM = m2*(0.257*0.2921)^2;
+            I1 = 90;
+            I2 = 80;
+            I2COM = 85;
+%             I1 = m1*((l1^2)/2);
+%             I2 = m2*(l2^2);
+%             I2COM = m2*(0.257*0.2921)^2;
             
             % TO DO: decide what to pass into these activation functions (can be angle/time?)
             aTA = SP.getActivationTA(t);
@@ -369,7 +380,7 @@ classdef SwingPhaseModel < handle
             fS = 16000;
             sMoment = fS*S.forceLengthSE(S.getNormalizedLengthSE(sLength,x(6)))*dS;
 
-            
+            t;
             
             % TO DO:::::::::fix equations so mass of shank is in the MIDDLE
             % of the shank rather than at the end
@@ -411,23 +422,15 @@ classdef SwingPhaseModel < handle
                         
             phi1=y(1,:)'; dtphi1=y(3,:)';
             phi2=y(2,:)'; dtphi2=y(4,:)';
-            l1=SP.shankLength; l2=SP.ankleFootLength; l3=SP.ankleToeLength;
+            l1=SP.shankLength; l2=SP.ankleFootLength; l3=SP.COMToeLength;
             
             % Coordinates of ankle and COM of foot
             x1 = l1*sin(phi1);
             y1 = -l1*cos(phi1);
             x2 = l1*sin(phi1)+l2*sin(phi2);
             y2 = -l1*cos(phi1)-l2*cos(phi2);
-%             for i = 1:length(x1)
-%                if cos(phi2) <= 1
-%                    x3 = l1*cos(phi1)+l3*sin(phi2-0.5349);
-%                    y3 = -l1*cos(phi1)-l3*cos(phi2+0.5349);
-%                else
-%                    x3 = l1*cos(phi1)-l3*sin(phi2-0.5349);
-%                    y3 = -l1*cos(phi1)+l3*cos(phi2+0.5349);
-%                end
-%             end
-            
+            x3 = l1*sin(phi1)+l2*sin(phi2)+l3*cos(1.43577-phi2);
+            y3 = -l1*cos(phi1)-l2*cos(phi2)-l3*sin(1.43577-phi2);
             
             % Plot trajectory of ankle and COM of foot
             figure(1)
