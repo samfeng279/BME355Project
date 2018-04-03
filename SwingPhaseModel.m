@@ -25,6 +25,7 @@ classdef SwingPhaseModel < handle
         gaitInterval = 1.41;
         swingInterval = [0.6 1]; % percentage of the gait cycle that is the swing phase
         pointNum = 5000;
+        frequency = 50;
     end
     
     methods (Static)
@@ -142,13 +143,12 @@ classdef SwingPhaseModel < handle
     methods (Access = public)
         %20-50Hz
         % will be loading data = csvread('TA_STIM.csv'); 
-        function getModelledTA(SP, data, frequency)
+        function SP = getModelledTA(SP, data)
             regressions = SwingPhaseModel.getActivationRegression(data, SP.gaitInterval);
             simulatedTA = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
-            
-            delta = (SP.pointNum/SP.gaitInterval)/frequency;
+            delta = (SPpointNum/SP.gaitInterval)/SP.frequency;
             % identifying where peaks and zeros occur, as well as identifying the linear
             % relation between adjacents
             latestPeak = 1; latestZero = 1;
@@ -214,7 +214,7 @@ classdef SwingPhaseModel < handle
                     end
                 end
             end
-            
+
             SP.modelledTA = activations;
         end 
         
@@ -222,11 +222,11 @@ classdef SwingPhaseModel < handle
         % will be loading data = csvread('S_STIM.csv');
         %20-50Hz
         function SP = getModelledS(SP, data, frequency)
-            regressions = getActivationRegression(data, SP.gaitInterval);
-            simulatedS = getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
+            regressions = SwingPhaseModel.getActivationRegression(data, SP.gaitInterval);
+            simulatedS = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
-            delta = (SP.pointNum/SP.gaitInterval)/frequency;
+            delta = (SPpointNum/SP.gaitInterval)/SP.frequency;
             % identifying where peaks and zeros occur, as well as identifying the linear
             % relation between adjacents
             latestPeak = 1; latestZero = 1;
@@ -292,7 +292,7 @@ classdef SwingPhaseModel < handle
                     end
                 end
             end
-            
+
             SP.modelledS = activations;
         end 
         
@@ -327,7 +327,7 @@ classdef SwingPhaseModel < handle
         
         function simulate(SP)
             taData = csvread('TA_STIM.csv');
-            SP.getModelledTA(taData, 50);
+            SP.getModelledTA(taData); 
             
             clc; figure;
             
