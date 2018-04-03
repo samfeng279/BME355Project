@@ -19,8 +19,8 @@ classdef SwingPhaseModel < handle
         modelledTA; 
         modelledS;
         %need to find the correct values for these
-        gaitInterval = 2;
-        swingInterval = 0;
+        gaitInterval = 1.41;
+        swingInterval = [0.6 1]; % percentage of the gait cycle that is the swing phase
         pointNum = 5000;
     end
     
@@ -128,9 +128,10 @@ classdef SwingPhaseModel < handle
                 end
             end
             
-            % TO DO: clip data for the swing phase using swingInterval
-            % (will also need to alter code in below function)
-            
+            % clipping data for the swing phase using swingInterval
+            min_index = round(swingInterval(2)*size(simulated_ta,1));
+            max_index = round(swingInterval(2)*size(simulated_ta,1));
+            simulated = simulated_ta(min_index:max_index,1:2);
             result = simulated;
         end
     end

@@ -9,6 +9,7 @@ ta_data = csvread('TA_STIM.csv');
 
 % TO DO: identify the proper gait interval in seconds (duty cycle)
 % updating time values to fit with the gait inteval
+
 gait_interval = 2;
 for i = 1:size(ta_data,1)
     ta_data(i,1) = ta_data(i,1)*(10^-2)*gait_interval;
@@ -86,6 +87,8 @@ for i = 1:size(new_times,2)
     end
 end
 
+simulated = simulated_ta(round(0.6*size(simulated_ta,1)):round(1*size(simulated_ta,1)),1:2);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ACTIVATION MODELLING CODE BASED ON THE SIMULATED SAMPLE DATA SET TO
@@ -94,7 +97,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 pulse_width = 0.001; %500-1000 microseconds --> may need to change based on sampling rates
-frequency = 20; %20-50Hz
+frequency = 50; %20-50Hz
 
 % using frequency to find how many points exist between zeros and peaks
 point_dist = (size(new_times,2)/gait_interval)/frequency;

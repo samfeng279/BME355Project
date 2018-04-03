@@ -11,8 +11,8 @@ data = csvread('TA_STIM.csv');
 pointNum = 5000;
 gaitInterval = 2;
 swingInterval = 1;
-minFreq = 10;
-maxFreq = 60;
+minFreq = 20;
+maxFreq = 50;
 fatigue = [];
 for i = minFreq:maxFreq
     %getting the modelled data for the specified frequency
