@@ -8,16 +8,18 @@ classdef SwingPhaseModel < handle
         shankAngle = 5.926; % Initial angle of shank from pi/2
         shankAngVel = 2.042;  % Initial angular velocity of shank
         footAngle = 6.574; % Initial angle of COM of foot from pi/2
-        footAngVel = 7.460; % Initial angular velocity of COM of foot
-%         footAngVel = 0;
-%         shankAngVel = 0;
+        footAngVel = 2.460; % Initial angular velocity of COM of foot
+        shankAngVelDrop = 2.042*0.47;
+        footAngVelDrop = 2.460*0.47;
+       % footAngVel = 0;
+        %shankAngVel = 0;
         shankMass = 0.0433*80.7; 
         footMass = 0.0137*80.7;  
         shankLength = 0.4318; 
         ankleFootLength = 0.07136; % Distance from ankle to COM of foot
         %ankleToeLength = 0.2331;
-        COMToeLength = 0.217883;
-        duration = 0.6; % Duration of simulation
+        COMToeLength = 0.117883;
+        duration = 0.65; % Duration of simulation
         fps = 100; % Frames per sec - changes resolution of animation 
         modelledTA; 
         modelledS;
@@ -25,7 +27,7 @@ classdef SwingPhaseModel < handle
         gaitInterval = 1.41;
         swingInterval = [0.6 1]; % percentage of the gait cycle that is the swing phase
         pointNum = 5000;
-        frequency = 50;
+        frequency = 34;
     end
     
     methods (Static)
@@ -68,7 +70,7 @@ classdef SwingPhaseModel < handle
             if size(theta, 1) > size(theta, 2)
                 result = result';
             end
-        end 
+        end   
         
         % function for running regression on the muscle activation graph to
         % get modellig equations
@@ -133,22 +135,24 @@ classdef SwingPhaseModel < handle
             end
             
             % clipping data for the swing phase using swingInterval
-            min_index = round(swingInterval(2)*size(simulated,1));
+            min_index = round(swingInterval(1)*size(simulated,1));
             max_index = round(swingInterval(2)*size(simulated,1));
             simulated = simulated(min_index:max_index,1:2);
             result = simulated;
         end
+        
     end
     
     methods (Access = public)
+        
         %20-50Hz
         % will be loading data = csvread('TA_STIM.csv'); 
-        function SP = getModelledTA(SP, data)
+        function getModelledTA(SP, data)
             regressions = SwingPhaseModel.getActivationRegression(data, SP.gaitInterval);
             simulatedTA = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
-            delta = (SPpointNum/SP.gaitInterval)/SP.frequency;
+            delta = (SP.pointNum/SP.gaitInterval)/SP.frequency;
             % identifying where peaks and zeros occur, as well as identifying the linear
             % relation between adjacents
             latestPeak = 1; latestZero = 1;
@@ -216,8 +220,7 @@ classdef SwingPhaseModel < handle
             end
 
             SP.modelledTA = activations;
-        end 
-        
+        end   
         
         % will be loading data = csvread('S_STIM.csv');
         %20-50Hz
@@ -297,8 +300,7 @@ classdef SwingPhaseModel < handle
         end 
         
         function aTA = getActivationTA(SP, t)
-            % current test activation for TA
-            %aTA = 900;
+           % current test activation for TA
             
             % t point access of TA activation
 %             for i = 1:size(SP.modelledTA,1)
@@ -306,7 +308,8 @@ classdef SwingPhaseModel < handle
 %                     aTA = SP.modelledTA(i,2);
 %                 end
 %             end
-            [c index] = min(abs(SP.modelledTA(:,1)-t));
+
+            [c index] = min(abs(SP.modelledTA(:,1)'-t-0.8433));
             aTA = SP.modelledTA(index,2);
         end
         
@@ -325,7 +328,7 @@ classdef SwingPhaseModel < handle
 %             aS = SP.modelledS(index,2);
         end
         
-        function simulate(SP)
+        function simulate(SP, dropFoot)
             taData = csvread('TA_STIM.csv');
             SP.getModelledTA(taData); 
             
@@ -340,14 +343,23 @@ classdef SwingPhaseModel < handle
             restLengthS = SP.soleusLength(pi/2);
             S = HillTypeMuscle(8000, .6*restLengthS, .4*restLengthS);
             
+            if dropFoot
+                footAngVel = SP.footAngVelDrop;
+                shankAngVel = SP.shankAngVelDrop;
+            else
+                footAngVel = SP.footAngVel;
+                shankAngVel = SP.shankAngVel;
+            end
+            
+            
             % Set initial parameters for ODE
-            ivp=[SP.shankAngle; SP.footAngle; SP.shankAngVel; SP.footAngVel; 1.045; 0.8129];
+            ivp=[SP.shankAngle; SP.footAngle; shankAngVel; footAngVel; 1.045; 0.8129];
             
             % Simulate double pendulum behaviour
-            SP.double_pendulum(ivp, SP.duration, SP.fps, TA, S);
+            SP.double_pendulum(ivp, SP.duration, SP.fps, TA, S, dropFoot);
         end 
         
-        function xdot = dynamics(SP,t,x,TA,S)
+        function xdot = dynamics(SP,t,x,TA,S,dropFoot)
             % x: [shankAngle; footAngle; shankAngVel; footAngVel; CE TA length; CE soleus length];
             
             xdot = zeros(6,1);
@@ -364,8 +376,12 @@ classdef SwingPhaseModel < handle
 %             I2 = m2*(l2^2);
 %             I2COM = m2*(0.257*0.2921)^2;
             
-            % TO DO: decide what to pass into these activation functions (can be angle/time?)
-            aTA = SP.getActivationTA(t);
+            if dropFoot
+                aTA = 0;
+            else
+                aTA = 10000*SP.getActivationTA(t);
+            end
+            
             aS = SP.getActivationS(t);
             
             % Calculate moment about ankle due to TA
@@ -380,7 +396,7 @@ classdef SwingPhaseModel < handle
             fS = 16000;
             sMoment = fS*S.forceLengthSE(S.getNormalizedLengthSE(sLength,x(6)))*dS;
 
-            t;
+            t
             
             % TO DO:::::::::fix equations so mass of shank is in the MIDDLE
             % of the shank rather than at the end
@@ -409,14 +425,14 @@ classdef SwingPhaseModel < handle
             
         end
 
-        function double_pendulum(SP,ivp,duration,fps,TA,S)
+        function double_pendulum(SP,ivp,duration,fps,TA,S,dropFoot)
             % Simulates behaviour of double pendulum with muscle moments
             % included, creates graphs to assist with visualization
             
-            clear All; clf;
+            % clear All; clf;
 
             nframes = duration*fps;
-            sol = ode45(@(t,x) SP.dynamics(t,x,TA,S),[0 duration], ivp);
+            sol = ode45(@(t,x) SP.dynamics(t,x,TA,S,dropFoot),[0 duration], ivp);
             t = linspace(0,duration,nframes);
             y = deval(sol,t);
                         
@@ -440,9 +456,10 @@ classdef SwingPhaseModel < handle
             h=gca; 
             get(h,'fontSize') 
             set(h,'fontSize',14)
+            legend('Ankle','Foot COM')
             xlabel('X','fontSize',14);
             ylabel('Y','fontSize',14);
-            title('Chaotic Double Pendulum','fontsize',14)
+            title('Ankle and Foot Motion','fontsize',14)
             fh = figure(1);
             set(fh, 'color', 'white'); 
             
@@ -464,19 +481,26 @@ classdef SwingPhaseModel < handle
             % Plot angle of shank and ankle-foot COM over time
             figure(3)
             height = zeros(size(x1));
-            height(1) = x1(1) + cos(phi2(1))*0.2386;
-            for i = 1:length(x1)
-               if cos(phi2) <= 1
-                   height(i) = (x1(i) + cos(phi2(i))*0.2386);
-               else
-                   height(i) = (x1(i) - cos(phi2(i))*0.2386);
-               end
+            for i = 1:length(y3)
+                height(i) = y3(i) - y3(1);
             end
+%             height(1) = x1(1) + cos(phi2(1))*0.2386;
+%             for i = 1:length(x1)
+%                if cos(phi2) <= 1
+%                    height(i) = (x1(i) + cos(phi2(i))*0.2386);
+%                else
+%                    height(i) = (x1(i) - cos(phi2(i))*0.2386);
+%                end
+%             end
             plot(t, height)
+            xlabel('time','fontSize',14);
+            ylabel('Toe Height','fontSize',14);
+            title('Toe Hight over Time','fontsize',14)
+            axis([0 0.7 -0.05 0.25]); axis square;
 
             figure(4)
             h=plot(0,0,'MarkerSize',30,'Marker','.','LineWidth',2);
-            range=1.1*(l1+l2); axis([-range range -range range]); axis square;
+            range=1.1*(l1+l2); axis([-range range -2*range range]); axis square;
             set(gca,'nextplot','replacechildren');
             for i=1:length(phi1)-1
                 if (ishandle(h)==1)
