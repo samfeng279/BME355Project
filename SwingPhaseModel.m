@@ -135,9 +135,9 @@ classdef SwingPhaseModel < handle
             end
             
             % clipping data for the swing phase using swingInterval
-            min_index = round(swingInterval(1)*size(simulated,1));
-            max_index = round(swingInterval(2)*size(simulated,1));
-            simulated = simulated(min_index:max_index,1:2);
+            minIndex = round(swingInterval(1)*size(simulated,1));
+            maxIndex = round(swingInterval(2)*size(simulated,1));
+            simulated = simulated(minIndex:maxIndex,1:2);
             result = simulated;
         end
         
