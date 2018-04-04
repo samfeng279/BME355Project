@@ -4,29 +4,24 @@ classdef SwingPhaseModel < handle
     % tibialis anterior and soleus. 
     
     properties (Access = public)
-        shankAngle = 5.926; % Initial angle of shank from pi/2
-        shankAngVel = 2.042;  % Initial angular velocity of shank
-        footAngle = 6.574; % Initial angle of COM of foot from pi/2
-        footAngVel = 2.460; % Initial angular velocity of COM of foot
-        shankAngVelDrop = 2.042*0.47;
-        footAngVelDrop = 2.460*0.47;
-        %footAngVel = 0;
-        %shankAngVel = 0;
+        shankAngle = 5.926; % Initial angle of shank from -pi/2
+        footAngle = 6.574; % Initial angle of COM of foot from -pi/2
+        shankAngVel = 2.042;  % Initial angular velocity of shank, stimulated
+        footAngVel = 2.460; % Initial angular velocity of COM of foot, stimulated
+        shankAngVelDrop = 2.042*0.47; % Initial angular velocity of shank, unstimulated
+        footAngVelDrop = 2.460*0.47; % Initial angular velocity of COM of foot, unstimulated
         shankMass = 0.0433*80.7; 
         footMass = 0.0137*80.7;  
         shankLength = 0.4318; 
         ankleFootLength = 0.07136; % Distance from ankle to COM of foot
-        %ankleToeLength = 0.2331;
-        COMToeLength = 0.117883;
+        COMToeLength = 0.117883; % Distance from COM of foot to toes
         duration = 0.65; % Duration of simulation
         fps = 100; % Frames per sec - changes resolution of animation 
-        modelledTA; 
-        modelledS;
-        %need to find the correct values for these
-        gaitInterval = 1.41;
+        modelledTA; % TA activation based off regression, array of TA values and time
+        pointNum = 5000; % Number of points in modelledTA
+        gaitInterval = 1.41; % Time required for one gait cycle
         swingInterval = [0.6 1]; % percentage of the gait cycle that is the swing phase
-        pointNum = 5000;
-        frequency = 34;
+        frequency = 34; % Ideal frequency of stimulation
     end
     
     methods (Static)
@@ -220,144 +215,60 @@ classdef SwingPhaseModel < handle
 
             SP.modelledTA = activations;
         end   
-        
-        % will be loading data = csvread('S_STIM.csv');
-        %20-50Hz
-        function SP = getModelledS(SP, data, frequency)
-            regressions = SwingPhaseModel.getActivationRegression(data, SP.gaitInterval);
-            simulatedS = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
-            
-            % using frequency to find how many points exist between zeros and peaks
-            delta = round((SPpointNum/SP.gaitInterval)/SP.frequency);
-            % identifying where peaks and zeros occur, as well as identifying the linear
-            % relation between adjacents
-            latestPeak = 1; latestZero = 1;
-            peaks = []; zeros = [1];
-            eqns = []; % store info in format: start_index end_index coeff(1) coeff(2)
-            for i = 1:size(simulatedS,1)    
-                % identify where and when peaks should occur (to create jagged activation)
-                if (latestPeak == 1) && ((i - latestPeak) > delta/2)
-                    latestPeak = i;
-                    peaks = [peaks; i];
-                else
-                    if (i - latestPeak) > delta
-                        latestPeak = i;
-                        peaks = [peaks; i];
-                    elseif (i - latestZero) > delta
-                        latestZero = i;
-                        zeros = [zeros; i];
-                    end  
-                end
-
-                % looking at the ascending curve to peak
-                if latestZero < latestPeak
-                    % check for empty eqns (check is not necessary for descending case
-                    % as it is assumed ascending comes first
-                    if isempty(eqns)
-                        coeffs = polyfit([simulatedS(latestZero,1) simulatedS(latestPeak,1)], [simulatedS(latestZero,2) simulatedS(latestPeak,2)], 1);
-                        eqns = [eqns; latestZero latestPeak coeffs(1) coeffs(2)];
-                    % checking if the coeffs have already been found for these
-                    % particular points
-                    elseif ~any(eqns(:,1) == latestZero)
-                        coeffs = polyfit([simulatedS(latestZero,1) simulatedS(latestPeak,1)], [0 simulatedS(latestPeak,2)], 1);
-                        eqns = [eqns; latestZero latestPeak coeffs(1) coeffs(2)];
-                    end
-                % looking at the descending curve from peak 
-                elseif latestZero > latestPeak
-                    if ~any(eqns(:,1) == latestPeak)
-                        coeffs = polyfit([simulatedS(latestPeak,1) simulatedS(latestZero,1)], [simulatedS(latestPeak,2) 0], 1);
-                        eqns = [eqns; latestPeak latestZero coeffs(1) coeffs(2)];
-                    end
-                end
-            end
-
-            % finded modelled activation values
-            activations = [];
-            for i = 1:size(simulatedS,1)
-                if any(zeros(:) == i)
-                    % if labelled as a zero, input into the activation matrix with
-                    % activation of 0
-                    activations = [activations; simulatedS(i,1) 0];
-                elseif any(peaks(:) == i)
-                    % if labelled as a peak, input into the activation matrix with
-                    % sample activation 
-                    activations = [activations; simulatedS(i,1) simulatedS(i,2)];
-                else
-                    % else, based on the location of the point, use the coefficients found 
-                    % to find the corresponding activation
-                    % find new value based on linearity between adjacent zero and peak
-                    for j = 1:size(eqns,1)
-                        if  i < eqns(j,2) && i > eqns(j,1)
-                            a = polyval([eqns(j,3) eqns(j,4)],simulatedS(i,1));
-                            activations = [activations; simulatedS(i,1) a];
-                        end
-                    end
-                end
-            end
-
-            SP.modelledS = activations;
-        end 
-        
+                
         function aTA = getActivationTA(SP, t)
-           % current test activation for TA
+            % Get activation of TA at a given time of step cycle
             
-            % t point access of TA activation
-%             for i = 1:size(SP.modelledTA,1)
-%                 if SP.modelledTA(i,1) == t
-%                     aTA = SP.modelledTA(i,2);
-%                 end
-%             end
-
-            [c index] = min(abs(SP.modelledTA(:,1)'-t-0.8433));
+            % Find closest value of SP.modelledTA time to t 
+            % First time of modelledTA considered is 0.8433 (offset)            
+            [c, index] = min(abs(SP.modelledTA(:,1)'-t-0.8433));
+            
+            % Activation is the activation at that index
             aTA = SP.modelledTA(index,2);
         end
         
         function aS = getActivationS(SP, t)
-            % current test activation for S
+           	% Activation of soleus constantly 0 for this model
             aS = 0;
-            
-%             % t point access of S activation
-%             for i = 1:size(SP.modelledS,1)
-%                 if SP.modelledS(i,1) == t
-%                     aS = SP.modelledS(i,2);
-%                 end
-%             end
-
-%             [c index] = min(abs(SP.modelledS(:,1)-t));
-%             aS = SP.modelledS(index,2);
         end
         
-        function simulate(SP, dropFoot)
+        function simulate(SP, stimulation)
+            % If stimulation == 1, external activation applied to TA 
+            % Else, no stimulation applied
+            
+            % Read in TA activation data 
             taData = csvread('TA_STIM.csv');
+            % Regress data, returning array of TA values and time
             SP.getModelledTA(taData); 
             
             clc; figure;
             
             % Initialize TA and soleus muscles
             restLengthTA = SP.tibialisLength(pi/2);
-            TA = HillTypeMuscle(222000, .6*restLengthTA, .4*restLengthTA);
+            TA = HillTypeMuscle(2000, .6*restLengthTA, .4*restLengthTA);
             restLengthS = SP.soleusLength(pi/2);
-            S = HillTypeMuscle(8000, .6*restLengthS, .4*restLengthS);
-            
-            if dropFoot
-                footAngVel = SP.footAngVelDrop;
-                shankAngVel = SP.shankAngVelDrop;
-            else
-                footAngVel = SP.footAngVel;
-                shankAngVel = SP.shankAngVel;
+            S = HillTypeMuscle(16000, .6*restLengthS, .4*restLengthS);
+           
+            % Angular velocities differ if foot is stimulated vs not
+            if stimulation
+                footVel = SP.footAngVel;
+                shankVel = SP.shankAngVel;
+            else                
+                footVel = SP.footAngVelDrop;
+                shankVel = SP.shankAngVelDrop;
             end
             
             % Set initial parameters for ODE
-            ivp=[SP.shankAngle; SP.footAngle; shankAngVel; footAngVel; 1.045; 0.8129];
+            ivp=[SP.shankAngle; SP.footAngle; shankVel; footVel; 1.045; 0.8129];
             
             % Simulate double pendulum behaviour
-            SP.double_pendulum(ivp, SP.duration, SP.fps, TA, S, dropFoot);
+            SP.double_pendulum(ivp, SP.duration, SP.fps, TA, S, stimulation);
             
             %Simulate isometric forces
-            SP.isometric(TA,222000,.6*restLengthTA,.4*restLengthTA, dropFoot);
+            SP.isometric(TA, 2000,.6*restLengthTA,.4*restLengthTA, stimulation);
         end 
         
-        function xdot = dynamics(SP,t,x,TA,S,dropFoot)
+        function xdot = dynamics(SP, t, x, TA, S, stimulation)
             % x: [shankAngle; footAngle; shankAngVel; footAngVel; CE TA length; CE soleus length];
             
             xdot = zeros(6,1);
@@ -370,14 +281,12 @@ classdef SwingPhaseModel < handle
             I1 = 90;
             I2 = 80;
             I2COM = 85;
-%             I1 = m1*((l1^2)/2);
-%             I2 = m2*(l2^2);
-%             I2COM = m2*(0.257*0.2921)^2;
             
-            if dropFoot
-                aTA = 0;
-            else
+            % TA activation different if TA is stimulated  
+            if stimulation
                 aTA = 10000*SP.getActivationTA(t);
+            else
+                aTA = 0;
             end
             
             aS = SP.getActivationS(t);
@@ -412,20 +321,21 @@ classdef SwingPhaseModel < handle
                 (-m2^2*l1^2*l2^2*cos(x(1)-x(2))^2+I1*I2COM+I1*m2*l2^2+m2*l1^2*I2COM+m2^2*l1^2*l2^2) + (taMoment-sMoment)/I2; %theta 2-double-dot
             
             xdot(5) = TA.getVelocity(aTA,x(5),TA.getNormalizedLengthSE(taLength,x(5)));
-            %xdot(6) = S.getVelocity(aS,x(6),TA.getNormalizedLengthSE(sLength,x(6)));
+            xdot(6) = S.getVelocity(aS,x(6),TA.getNormalizedLengthSE(sLength,x(6)));
             
         end
 
-        function double_pendulum(SP,ivp,duration,fps,TA,S,dropFoot)
+        function double_pendulum(SP,ivp,duration,fps,TA,S,stimulation)
             % Simulates behaviour of double pendulum with muscle moments
             % included, creates graphs to assist with visualization
             
             % clear All; clf;
             nframes = duration*fps;
-            sol = ode45(@(t,x) SP.dynamics(t,x,TA,S,dropFoot),[0 duration], ivp);
+            sol = ode45(@(t,x) SP.dynamics(t,x,TA,S,stimulation),[0 duration], ivp);
             t = linspace(0,duration,nframes);
             y = deval(sol,t);
-                        
+            
+            % Define angles, angular velocities, lengths for plotting
             phi1=y(1,:)'; dtphi1=y(3,:)';
             phi2=y(2,:)'; dtphi2=y(4,:)';
             l1=SP.shankLength; l2=SP.ankleFootLength; l3=SP.COMToeLength;
@@ -468,17 +378,16 @@ classdef SwingPhaseModel < handle
             fh = figure(2);
             set(fh, 'color', 'white'); 
             
-            % Plot angle of shank and ankle-foot COM over time
+            % Calculate and plot height relative to first inital height
             figure(3)
             height = zeros(size(x1));
             for i = 1:length(y3)
                 height(i) = y3(i) - y3(1);
             end
-
             plot(t, height)
             xlabel('Time (s)','fontSize',14);
             ylabel('Toe Height (m)','fontSize',14);
-            title('Toe Hight over Time','fontsize',14)
+            title('Toe Height over Time','fontsize',14)
             axis([0 (SP.duration+0.1) -0.05 0.25]); axis square;
 
             figure(4)
@@ -497,16 +406,17 @@ classdef SwingPhaseModel < handle
                 end
             end
         end
-        function isometric(SP,TA,f0M,restingLengthCE,restingLengthSE,dropFoot)
-            % Simulates Isometric force behaviour of the TA
+        
+        function isometric(SP,TA,f0M,restingLengthCE,restingLengthSE,stimulation)
+            % Simulates isometric force behaviour of the TA
             % included, creates graphs to assist with visualization
             
             L = restingLengthCE + restingLengthSE;
             
-            if dropFoot
-               afun = @(t) 0*t;
-            else
+            if stimulation
                afun = @(t) SP.getActivationTA(t);
+            else               
+               afun = @(t) 0*t;
             end
             
             odefun = @(t, y) TA.getVelocity(afun(t), y, TA.getNormalizedLengthSE(L,y));
@@ -527,5 +437,4 @@ classdef SwingPhaseModel < handle
             xlim([0 (SP.duration+0.1)]);
         end
     end      
-    
 end
