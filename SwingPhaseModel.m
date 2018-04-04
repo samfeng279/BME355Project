@@ -135,9 +135,9 @@ classdef SwingPhaseModel < handle
             end
             
             % clipping data for the swing phase using swingInterval
-            min_index = round(swingInterval(1)*size(simulated,1));
-            max_index = round(swingInterval(2)*size(simulated,1));
-            simulated = simulated(min_index:max_index,1:2);
+            minIndex = round(swingInterval(1)*size(simulated,1));
+            maxIndex = round(swingInterval(2)*size(simulated,1));
+            simulated = simulated(minIndex:maxIndex,1:2);
             result = simulated;
         end
         
@@ -152,7 +152,7 @@ classdef SwingPhaseModel < handle
             simulatedTA = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
-            delta = (SP.pointNum/SP.gaitInterval)/SP.frequency;
+            delta = round((SP.pointNum/SP.gaitInterval)/SP.frequency);
             % identifying where peaks and zeros occur, as well as identifying the linear
             % relation between adjacents
             latestPeak = 1; latestZero = 1;
@@ -229,7 +229,7 @@ classdef SwingPhaseModel < handle
             simulatedS = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
-            delta = (SPpointNum/SP.gaitInterval)/SP.frequency;
+            delta = round((SPpointNum/SP.gaitInterval)/SP.frequency);
             % identifying where peaks and zeros occur, as well as identifying the linear
             % relation between adjacents
             latestPeak = 1; latestZero = 1;
