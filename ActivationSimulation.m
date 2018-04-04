@@ -1,40 +1,36 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SIMULATING THE MODEL IN ORDER TO FIND OPTIMUM FREQUENCY FOR MINIMAL
+% RELATIVE FATIGUE IN THE TIBIALIS ANTERIOR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Instantiating simulation specific data
 data = csvread('TA_STIM.csv'); 
 pointNum = 5000;
 gaitInterval = 1.41;
 swingInterval = [0.6 1];
-minFreq = 20;
-maxFreq = 50;
-fatigue = [];
 
+% finding model simulated data for later use
 regressions = getActivationRegression(data, gaitInterval); 
-simulatedTA = getSimulatedActivations(regressions, gaitInterval, swingInterval);
+simulated = getSimulatedActivations(regressions, gaitInterval);
 
-for i = minFreq:maxFreq
-    %getting the modelled data for the specified frequency
-    
-    model = getModelledActivations(simulatedTA, i, gaitInterval, pointNum);
-    
-    area = trapz(model(:,1),model(:,2));
-    fatigue = [fatigue; i area];
-    
-    % plot regular sample data and overlay modelled activations
-%     figure(i)
-%     plot(simulatedTA(:,1),simulatedTA(:,2), 'b')
-%     hold on
-%     plot(model(:,1), model(:,2), 'r')
-%     xlabel('Time (s)')
-%     ylabel('EMG (smV)')
-%     legend('Simulated', 'Modelled')
-end
+% find clipped data for the swing phase
+clipped = clipSwingPhase(simulated, swingInterval);
+model = getModelledActivations(clipped, 34, gaitInterval, 5000);
 
-% plot freq vs. fatigue
 figure(1)
-plot(fatigue(:,1),fatigue(:,2), 'b')
-xlabel('Frequecy (Hz)')
-ylabel('Relative Fatigue')
+plot(clipped(:,1),clipped(:,2), 'b')
+hold on
+plot(model(:,1), model(:,2), 'r')
+xlabel('Time (s)')
+ylabel('EMG (smV)')
+legend('Simulated', 'Modelled')
+
+% simulate the fatigue for a set of freqencies
+fatigue = getFatigue(20, 50, simulated, gaitInterval, pointNum);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% FUNCTIONS
+% FUNCTIONS FOR SIMULATING FATIGUE AT DIFFERENT FREQUENCIES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function result = getActivationRegression(data, gaitInterval)
@@ -78,7 +74,7 @@ end
 
 % fuction for obtaining simulated activation values from modelled
 % curve
-function result = getSimulatedActivations(regressions, gaitInterval, swingInterval)
+function result = getSimulatedActivations(regressions, gaitInterval)
     % data set gives points to model the activation of TA, and from
     % here we calculate activations of TA through the gait cycle
     % using the regression -> create new time array (select point #)
@@ -96,16 +92,14 @@ function result = getSimulatedActivations(regressions, gaitInterval, swingInterv
             end
         end
     end
-
-    % TO DO: clip data for the swing phase using swingInterval
-    % (will also need to alter code in below function)
-
+    
     result = simulated;
-end
+ end
+
 
 function result = getModelledActivations(simulatedTA, frequency, gaitInterval, pointNum)
     % using frequency to find how many points exist between zeros and peaks
-    delta = (pointNum/gaitInterval)/frequency;
+    delta = round((pointNum/gaitInterval)/frequency);
     % identifying where peaks and zeros occur, as well as identifying the linear
     % relation between adjacents
     latestPeak = 1; latestZero = 1;
@@ -207,10 +201,40 @@ function result = getSimulated(regressions, gaitInterval, swingInterval)
     result = sim;
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SIMULATING THE MODEL IN ORDER TO FIND OPTIMUM FREQUENCY FOR MINIMAL
-% RELATIVE FATIGUE IN THE TIBIALIS ANTERIOR
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function result = clipSwingPhase(simulated, swingInterval)
+   % clipping data for the swing phase using swingInterval
+    minIndex = round(swingInterval(1)*size(simulated,1));
+    maxIndex = round(swingInterval(2)*size(simulated,1));
+    simulated = simulated(minIndex:maxIndex,1:2);
+    result = simulated;
+end
+
+function result = getFatigue(minFreq, maxFreq, simulated, gaitInterval, pointNum)
+    fatigue = [];
+    for i = minFreq:maxFreq
+        model = getModelledActivations(simulated, i, gaitInterval, pointNum);
+        area = trapz(model(:,1),model(:,2));
+        fatigue = [fatigue; i area];
+    end
+    
+    % plot regular sample data and overlay frequency specific modelled activations
+    figure(i+1)
+    plot(simulated(:,1),simulated(:,2), 'b')
+    hold on
+    plot(model(:,1), model(:,2), 'r')
+    xlabel('Time (s)')
+    ylabel('EMG (smV)')
+    legend('Simulated', 'Modelled')
+    
+    % plot frequency vs. fatigue
+    figure(i+2)
+    plot(fatigue(:,1),fatigue(:,2), 'b')
+    xlabel('Frequecy (Hz)')
+    ylabel('Relative Fatigue')
+    
+    result = fatigue;
+end
+
 
 
 
