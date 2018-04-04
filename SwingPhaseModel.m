@@ -455,12 +455,12 @@ classdef SwingPhaseModel < handle
             plot(x1,y1,'linewidth',2)
             hold on
             plot(x2,y2,'r','linewidth',2)
-            h=gca; 
+            h=gca;
             get(h,'fontSize') 
             set(h,'fontSize',14)
             legend('Ankle','Foot COM')
-            xlabel('X','fontSize',14);
-            ylabel('Y','fontSize',14);
+            xlabel('X (m)','fontSize',14);
+            ylabel('Y (m)','fontSize',14);
             title('Ankle and Foot Motion','fontsize',14)
             fh = figure(1);
             set(fh, 'color', 'white'); 
@@ -474,8 +474,8 @@ classdef SwingPhaseModel < handle
             get(h,'fontSize') 
             set(h,'fontSize',14)
             legend('\theta_1','\theta_2')
-            xlabel('Time','fontSize',14);
-            ylabel('phi','fontSize',14);
+            xlabel('Time (s)','fontSize',14);
+            ylabel('phi (rad)','fontSize',14);
             title('phi_1 and phi_2','fontsize',14)
             fh = figure(2);
             set(fh, 'color', 'white'); 
@@ -495,8 +495,8 @@ classdef SwingPhaseModel < handle
 %                end
 %             end
             plot(t, height)
-            xlabel('Time','fontSize',14);
-            ylabel('Toe Height','fontSize',14);
+            xlabel('Time (s)','fontSize',14);
+            ylabel('Toe Height (m)','fontSize',14);
             title('Toe Hight over Time','fontsize',14)
             axis([0 (SP.duration+0.1) -0.05 0.25]); axis square;
 
@@ -540,7 +540,7 @@ classdef SwingPhaseModel < handle
             xlim([0 (SP.duration+0.1)]);
             subplot(2,1,2)
             plot(time, f0M*TA.forceLengthSE(TA.getNormalizedLengthSE(L, x)));
-            xlabel('Time')
+            xlabel('Time (s)')
             ylabel('Force')
             set(gca, 'FontSize', 18)
             xlim([0 (SP.duration+0.1)]);
