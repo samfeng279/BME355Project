@@ -4,14 +4,13 @@ classdef SwingPhaseModel < handle
     % tibialis anterior and soleus. 
     
     properties (Access = public)
-        % TO DO: initial values
         shankAngle = 5.926; % Initial angle of shank from pi/2
         shankAngVel = 2.042;  % Initial angular velocity of shank
         footAngle = 6.574; % Initial angle of COM of foot from pi/2
         footAngVel = 2.460; % Initial angular velocity of COM of foot
         shankAngVelDrop = 2.042*0.47;
         footAngVelDrop = 2.460*0.47;
-       % footAngVel = 0;
+        %footAngVel = 0;
         %shankAngVel = 0;
         shankMass = 0.0433*80.7; 
         footMass = 0.0137*80.7;  
@@ -334,9 +333,6 @@ classdef SwingPhaseModel < handle
             
             clc; figure;
             
-            % TO DO: establish max iso forces, initial CE lengths of each
-            % muscle, resting lengths of muscles
-            
             % Initialize TA and soleus muscles
             restLengthTA = SP.tibialisLength(pi/2);
             TA = HillTypeMuscle(222000, .6*restLengthTA, .4*restLengthTA);
@@ -400,15 +396,8 @@ classdef SwingPhaseModel < handle
 
             t
             
-            % TO DO:::::::::fix equations so mass of shank is in the MIDDLE
-            % of the shank rather than at the end
+            % State equations and Lagrangian Formulas
             xdot(1) = x(3);
-        
-%             xdot(3)=-((g*(2*m1+m2)*sin(x(1))+m2*(g*sin(x(1)-2*x(2))+2*(l2*x(4)^2+...
-%                 l1*x(3)^2*cos(x(1)-x(2)))*sin(x(1)-x(2))))/...
-%                 (2*l1*(m1+m2-m2*cos(x(1)-x(2))^2)));
-%             xdot(4)=(((m1+m2)*(l1*x(3)^2+g*cos(x(1)))+l2*m2*x(4)^2*cos(x(1)-x(2)))*...
-%                 sin(x(1)-x(2))+taMoment-sMoment)/(l2*(m1+m2-m2*cos(x(1)-x(3))^2));
     
             xdot(2) = x(4);
             
@@ -423,7 +412,7 @@ classdef SwingPhaseModel < handle
                 (-m2^2*l1^2*l2^2*cos(x(1)-x(2))^2+I1*I2COM+I1*m2*l2^2+m2*l1^2*I2COM+m2^2*l1^2*l2^2) + (taMoment-sMoment)/I2; %theta 2-double-dot
             
             xdot(5) = TA.getVelocity(aTA,x(5),TA.getNormalizedLengthSE(taLength,x(5)));
-            xdot(6) = S.getVelocity(aS,x(6),TA.getNormalizedLengthSE(sLength,x(6)));
+            %xdot(6) = S.getVelocity(aS,x(6),TA.getNormalizedLengthSE(sLength,x(6)));
             
         end
 
@@ -432,7 +421,6 @@ classdef SwingPhaseModel < handle
             % included, creates graphs to assist with visualization
             
             % clear All; clf;
-
             nframes = duration*fps;
             sol = ode45(@(t,x) SP.dynamics(t,x,TA,S,dropFoot),[0 duration], ivp);
             t = linspace(0,duration,nframes);
@@ -486,14 +474,7 @@ classdef SwingPhaseModel < handle
             for i = 1:length(y3)
                 height(i) = y3(i) - y3(1);
             end
-%             height(1) = x1(1) + cos(phi2(1))*0.2386;
-%             for i = 1:length(x1)
-%                if cos(phi2) <= 1
-%                    height(i) = (x1(i) + cos(phi2(i))*0.2386);
-%                else
-%                    height(i) = (x1(i) - cos(phi2(i))*0.2386);
-%                end
-%             end
+
             plot(t, height)
             xlabel('Time (s)','fontSize',14);
             ylabel('Toe Height (m)','fontSize',14);
@@ -548,4 +529,3 @@ classdef SwingPhaseModel < handle
     end      
     
 end
-
