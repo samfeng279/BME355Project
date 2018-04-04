@@ -152,7 +152,7 @@ classdef SwingPhaseModel < handle
             simulatedTA = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
-            delta = (SP.pointNum/SP.gaitInterval)/SP.frequency;
+            delta = round((SP.pointNum/SP.gaitInterval)/SP.frequency);
             % identifying where peaks and zeros occur, as well as identifying the linear
             % relation between adjacents
             latestPeak = 1; latestZero = 1;
@@ -229,7 +229,7 @@ classdef SwingPhaseModel < handle
             simulatedS = SwingPhaseModel.getSimulatedActivations(regressions, SP.gaitInterval, SP.swingInterval);
             
             % using frequency to find how many points exist between zeros and peaks
-            delta = (SPpointNum/SP.gaitInterval)/SP.frequency;
+            delta = round((SPpointNum/SP.gaitInterval)/SP.frequency);
             % identifying where peaks and zeros occur, as well as identifying the linear
             % relation between adjacents
             latestPeak = 1; latestZero = 1;
