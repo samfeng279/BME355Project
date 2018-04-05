@@ -1,9 +1,7 @@
-% TO DO:
-
-% define model simulated
-% simulate regular walking swing phase
-% simulate swing phase walking with drop foot
-% EA plots
-
 s = SwingPhaseModel();
-s.simulate();
+
+% Without additional TA stimulation
+s.simulate(0);
+
+% With external TA stimulation
+s.simulate(1);
